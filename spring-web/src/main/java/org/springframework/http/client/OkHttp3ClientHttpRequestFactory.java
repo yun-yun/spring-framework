@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -35,7 +35,7 @@ import org.springframework.util.StringUtils;
 
 /**
  * {@link ClientHttpRequestFactory} implementation that uses
- * <a href="http://square.github.io/okhttp/">OkHttp</a> 3.x to create requests.
+ * <a href="https://square.github.io/okhttp/">OkHttp</a> 3.x to create requests.
  *
  * @author Luciano Leggieri
  * @author Arjen Poutsma
@@ -71,9 +71,8 @@ public class OkHttp3ClientHttpRequestFactory
 
 
 	/**
-	 * Sets the underlying read timeout in milliseconds.
+	 * Set the underlying read timeout in milliseconds.
 	 * A value of 0 specifies an infinite timeout.
-	 * @see OkHttpClient.Builder#readTimeout(long, TimeUnit)
 	 */
 	public void setReadTimeout(int readTimeout) {
 		this.client = this.client.newBuilder()
@@ -82,9 +81,8 @@ public class OkHttp3ClientHttpRequestFactory
 	}
 
 	/**
-	 * Sets the underlying write timeout in milliseconds.
+	 * Set the underlying write timeout in milliseconds.
 	 * A value of 0 specifies an infinite timeout.
-	 * @see OkHttpClient.Builder#writeTimeout(long, TimeUnit)
 	 */
 	public void setWriteTimeout(int writeTimeout) {
 		this.client = this.client.newBuilder()
@@ -93,9 +91,8 @@ public class OkHttp3ClientHttpRequestFactory
 	}
 
 	/**
-	 * Sets the underlying connect timeout in milliseconds.
+	 * Set the underlying connect timeout in milliseconds.
 	 * A value of 0 specifies an infinite timeout.
-	 * @see OkHttpClient.Builder#connectTimeout(long, TimeUnit)
 	 */
 	public void setConnectTimeout(int connectTimeout) {
 		this.client = this.client.newBuilder()

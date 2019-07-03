@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -209,8 +209,8 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 	/** Should we dispatch an HTTP TRACE request to {@link #doService}?. */
 	private boolean dispatchTraceRequest = false;
 
-	/** Should we set the status to 500 for unhandled failures? */
-	private boolean shouldHandleFailure = false;
+	/** Whether to log potentially sensitive info (request params at DEBUG + headers at TRACE). */
+	private boolean enableLoggingRequestDetails = false;
 
 	/** WebApplicationContext for this servlet. */
 	@Nullable
@@ -220,10 +220,10 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 	private boolean webApplicationContextInjected = false;
 
 	/** Flag used to detect whether onRefresh has already been called. */
-	private boolean refreshEventReceived = false;
+	private volatile boolean refreshEventReceived = false;
 
-	/** Whether to log potentially sensitive info (request params at DEBUG + headers at TRACE). */
-	private boolean enableLoggingRequestDetails = false;
+	/** Monitor for synchronized onRefresh execution. */
+	private final Object onRefreshMonitor = new Object();
 
 
 	/**
@@ -476,17 +476,6 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 	}
 
 	/**
-	 * Whether to handle failures wth {@code response.sendError(500)} as opposed
-	 * to letting them propagate to the container which may log a stacktrace
-	 * even if an error dispatch (e.g. Spring Boot app) handles the exception.
-	 * @param shouldHandleFailure whether to handle failures or propagate
-	 * @since 5.1
-	 */
-	public void setShouldHandleFailure(boolean shouldHandleFailure) {
-		this.shouldHandleFailure = shouldHandleFailure;
-	}
-
-	/**
 	 * Whether to log request params at DEBUG level, and headers at TRACE level.
 	 * Both may contain sensitive information.
 	 * <p>By default set to {@code false} so that request details are not shown.
@@ -605,7 +594,9 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 			// Either the context is not a ConfigurableApplicationContext with refresh
 			// support or the context injected at construction time had already been
 			// refreshed -> trigger initial onRefresh manually here.
-			onRefresh(wac);
+			synchronized (this.onRefreshMonitor) {
+				onRefresh(wac);
+			}
 		}
 
 		if (this.publishContext) {
@@ -846,7 +837,9 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 	 */
 	public void onApplicationEvent(ContextRefreshedEvent event) {
 		this.refreshEventReceived = true;
-		onRefresh(event.getApplicationContext());
+		synchronized (this.onRefreshMonitor) {
+			onRefresh(event.getApplicationContext());
+		}
 	}
 
 	/**
@@ -1012,16 +1005,12 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 			doService(request, response);
 		}
 		catch (ServletException | IOException ex) {
-			if (!handleFailure(request, response, ex)) {
-				failureCause = ex;
-				throw ex;
-			}
+			failureCause = ex;
+			throw ex;
 		}
 		catch (Throwable ex) {
-			if (!handleFailure(request, response, ex)) {
-				failureCause = ex;
-				throw new NestedServletException("Request processing failed", ex);
-			}
+			failureCause = ex;
+			throw new NestedServletException("Request processing failed", ex);
 		}
 
 		finally {
@@ -1087,24 +1076,6 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 		RequestContextHolder.setRequestAttributes(previousAttributes, this.threadContextInheritable);
 	}
 
-	private boolean handleFailure(HttpServletRequest request, HttpServletResponse response, Throwable ex) {
-		if (this.shouldHandleFailure) {
-			try {
-				response.sendError(500);
-			}
-			catch (IOException ex2) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("Handling of failure failed: " + ex2);
-				}
-				return false;
-			}
-			request.setAttribute(WebUtils.ERROR_STATUS_CODE_ATTRIBUTE, 500);
-			WebUtils.exposeErrorRequestAttributes(request, ex, getServletName());
-			return true;
-		}
-		return false;
-	}
-
 	private void logResult(HttpServletRequest request, HttpServletResponse response,
 			@Nullable Throwable failureCause, WebAsyncManager asyncManager) {
 
@@ -1118,7 +1089,9 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 		if (failureCause != null) {
 			if (!initialDispatch) {
 				// FORWARD/ERROR/ASYNC: minimal message (there should be enough context already)
-				logger.debug("Unresolved failure from \"" + dispatchType + "\" dispatch: " + failureCause);
+				if (logger.isDebugEnabled()) {
+					logger.debug("Unresolved failure from \"" + dispatchType + "\" dispatch: " + failureCause);
+				}
 			}
 			else if (logger.isTraceEnabled()) {
 				logger.trace("Failed to complete request", failureCause);

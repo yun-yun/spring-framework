@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,33 +17,29 @@
 package org.springframework.http.client.reactive;
 
 import java.net.URI;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.reactive.client.ContentChunk;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import org.springframework.context.SmartLifecycle;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.http.HttpMethod;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * Jetty ReactiveStreams HttpClient implementation of {@link ClientHttpConnector}.
- *
- * Implemented with buffer copy instead of optimized buffer wrapping because the latter
- * hangs since {@link Callback#succeeded()} doesn't allow releasing the buffer and
- * requesting more data at different times (required for {@code Mono<DataBuffer>} for example).
- * See https://github.com/eclipse/jetty.project/issues/2429 for more details.
+ * {@link ClientHttpConnector} for the Jetty Reactive Streams HttpClient.
  *
  * @author Sebastien Deleuze
  * @since 5.1
  * @see <a href="https://github.com/jetty-project/jetty-reactive-httpclient">Jetty ReactiveStreams HttpClient</a>
  */
-public class JettyClientHttpConnector implements ClientHttpConnector, SmartLifecycle {
+public class JettyClientHttpConnector implements ClientHttpConnector {
 
 	private final HttpClient httpClient;
 
@@ -51,66 +47,55 @@ public class JettyClientHttpConnector implements ClientHttpConnector, SmartLifec
 
 
 	/**
-	 * Create a Jetty {@link ClientHttpConnector} with the default {@link HttpClient}.
+	 * Default constructor that creates a new instance of {@link HttpClient}.
 	 */
 	public JettyClientHttpConnector() {
 		this(new HttpClient());
 	}
 
 	/**
-	 * Create a Jetty {@link ClientHttpConnector} with the given {@link HttpClient}.
+	 * Constructor with an {@link JettyResourceFactory} that will manage shared resources.
+	 * @param resourceFactory the {@link JettyResourceFactory} to use
+	 * @param customizer the lambda used to customize the {@link HttpClient}
+	 * @deprecated as of 5.2, in favor of {@link JettyClientHttpConnector#JettyClientHttpConnector(HttpClient, JettyResourceFactory)}
+	 */
+	@Deprecated
+	public JettyClientHttpConnector(
+			JettyResourceFactory resourceFactory, @Nullable Consumer<HttpClient> customizer) {
+		this(new HttpClient(), resourceFactory);
+		if (customizer != null) {
+			customizer.accept(this.httpClient);
+		}
+	}
+
+	/**
+	 * Constructor with an initialized {@link HttpClient}.
 	 */
 	public JettyClientHttpConnector(HttpClient httpClient) {
+		this(httpClient, null);
+	}
+
+	/**
+	 * Constructor with an initialized {@link HttpClient} and configures it
+	 * with the given {@link JettyResourceFactory}.
+	 * @param httpClient the {@link HttpClient} to use
+	 * @param resourceFactory the {@link JettyResourceFactory} to use
+	 * @since 5.2
+	 */
+	public JettyClientHttpConnector(HttpClient httpClient,
+			@Nullable JettyResourceFactory resourceFactory) {
 		Assert.notNull(httpClient, "HttpClient is required");
+		if (resourceFactory != null) {
+			httpClient.setExecutor(resourceFactory.getExecutor());
+			httpClient.setByteBufferPool(resourceFactory.getByteBufferPool());
+			httpClient.setScheduler(resourceFactory.getScheduler());
+		}
 		this.httpClient = httpClient;
 	}
 
 
 	public void setBufferFactory(DataBufferFactory bufferFactory) {
 		this.bufferFactory = bufferFactory;
-	}
-
-
-	@Override
-	public int getPhase() {
-		return Integer.MAX_VALUE;
-	}
-
-	@Override
-	public boolean isAutoStartup() {
-		return true;
-	}
-
-	@Override
-	public boolean isRunning() {
-		return this.httpClient.isRunning();
-	}
-
-	@Override
-	public void start() {
-		try {
-			// HttpClient is internally synchronized and protected with state checks
-			this.httpClient.start();
-		}
-		catch (Exception ex) {
-			throw new RuntimeException(ex);
-		}
-	}
-
-	@Override
-	public void stop() {
-		try {
-			this.httpClient.stop();
-		}
-		catch (Exception ex) {
-			throw new RuntimeException(ex);
-		}
-	}
-
-	@Override
-	public void stop(Runnable callback) {
-		stop();
-		callback.run();
 	}
 
 
@@ -133,16 +118,27 @@ public class JettyClientHttpConnector implements ClientHttpConnector, SmartLifec
 
 		JettyClientHttpRequest clientHttpRequest = new JettyClientHttpRequest(
 				this.httpClient.newRequest(uri).method(method.toString()), this.bufferFactory);
+
 		return requestCallback.apply(clientHttpRequest).then(Mono.from(
-				clientHttpRequest.getReactiveRequest().response((reactiveResponse, contentChunks) -> {
-					Flux<DataBuffer> content = Flux.from(contentChunks).map(chunk -> {
-						DataBuffer buffer = this.bufferFactory.allocateBuffer(chunk.buffer.capacity());
-						buffer.write(chunk.buffer);
-						chunk.callback.succeeded();
-						return buffer;
-					});
-					return Mono.just(new JettyClientHttpResponse(reactiveResponse, content));
+				clientHttpRequest.getReactiveRequest().response((response, chunks) -> {
+					Flux<DataBuffer> content = Flux.from(chunks).map(this::toDataBuffer);
+					return Mono.just(new JettyClientHttpResponse(response, content));
 				})));
+	}
+
+	private DataBuffer toDataBuffer(ContentChunk chunk) {
+
+		// We must copy until this is resolved:
+		// https://github.com/eclipse/jetty.project/issues/2429
+
+		// Use copy instead of buffer wrapping because Callback#succeeded() is
+		// used not only to release the buffer but also to request more data
+		// which is a problem for codecs that buffer data.
+
+		DataBuffer buffer = this.bufferFactory.allocateBuffer(chunk.buffer.capacity());
+		buffer.write(chunk.buffer);
+		chunk.callback.succeeded();
+		return buffer;
 	}
 
 }

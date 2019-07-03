@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,6 +19,7 @@ package org.springframework.messaging.simp.config;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.springframework.context.event.SmartApplicationListener;
 import org.springframework.lang.Nullable;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.SubscribableChannel;
@@ -53,6 +54,9 @@ public class MessageBrokerRegistry {
 
 	@Nullable
 	private String userDestinationPrefix;
+
+	@Nullable
+	private Integer userRegistryOrder;
 
 	@Nullable
 	private PathMatcher pathMatcher;
@@ -160,6 +164,22 @@ public class MessageBrokerRegistry {
 	@Nullable
 	protected String getUserDestinationPrefix() {
 		return this.userDestinationPrefix;
+	}
+
+	/**
+	 * Set the order for the
+	 * {@link org.springframework.messaging.simp.user.SimpUserRegistry
+	 * SimpUserRegistry} to use as a {@link SmartApplicationListener}.
+	 * @param order the order value
+	 * @since 5.0.8
+	 */
+	public void setUserRegistryOrder(int order) {
+		this.userRegistryOrder = order;
+	}
+
+	@Nullable
+	protected Integer getUserRegistryOrder() {
+		return this.userRegistryOrder;
 	}
 
 	/**

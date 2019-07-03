@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -73,16 +73,18 @@ import org.springframework.web.util.UriTemplateHandler;
  * support of less frequent cases.
  *
  * <p><strong>NOTE:</strong> As of 5.0, the non-blocking, reactive
- * {@link org.springframework.web.reactive.client.WebClient WebClient} offers a
+ * {@code org.springframework.web.reactive.client.WebClient} offers a
  * modern alternative to the {@code RestTemplate} with efficient support for
  * both sync and async, as well as streaming scenarios. The {@code RestTemplate}
  * will be deprecated in a future version and will not have major new features
- * added going forward.
+ * added going forward. See the WebClient section of the Spring Framework reference
+ * documentation for more details and example code.
  *
  * @author Arjen Poutsma
  * @author Brian Clozel
  * @author Roy Clarkson
  * @author Juergen Hoeller
+ * @author Sam Brannen
  * @since 3.0
  * @see HttpMessageConverter
  * @see RequestCallback
@@ -193,18 +195,19 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 	/**
 	 * Create a new instance of the {@link RestTemplate} using the given list of
 	 * {@link HttpMessageConverter} to use.
-	 * @param messageConverters the list of {@link HttpMessageConverter} to use.
+	 * @param messageConverters the list of {@link HttpMessageConverter} to use
 	 * @since 3.2.7
 	 */
 	public RestTemplate(List<HttpMessageConverter<?>> messageConverters) {
-		Assert.notEmpty(messageConverters, "At least one HttpMessageConverter required");
+		validateConverters(messageConverters);
 		this.messageConverters.addAll(messageConverters);
 		this.uriTemplateHandler = initUriTemplateHandler();
 	}
 
+
 	private static DefaultUriBuilderFactory initUriTemplateHandler() {
 		DefaultUriBuilderFactory uriFactory = new DefaultUriBuilderFactory();
-		uriFactory.setEncodingMode(EncodingMode.URI_COMPONENT); // for backwards compatibility..
+		uriFactory.setEncodingMode(EncodingMode.URI_COMPONENT);  // for backwards compatibility..
 		return uriFactory;
 	}
 
@@ -214,12 +217,17 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 	 * <p>These converters are used to convert from and to HTTP requests and responses.
 	 */
 	public void setMessageConverters(List<HttpMessageConverter<?>> messageConverters) {
-		Assert.notEmpty(messageConverters, "At least one HttpMessageConverter required");
+		validateConverters(messageConverters);
 		// Take getMessageConverters() List as-is when passed in here
 		if (this.messageConverters != messageConverters) {
 			this.messageConverters.clear();
 			this.messageConverters.addAll(messageConverters);
 		}
+	}
+
+	private void validateConverters(List<HttpMessageConverter<?>> messageConverters) {
+		Assert.notEmpty(messageConverters, "At least one HttpMessageConverter is required");
+		Assert.noNullElements(messageConverters, "The HttpMessageConverter list must not contain null elements");
 	}
 
 	/**
@@ -279,13 +287,11 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 	 * backwards compatibility, the encoding mode is set to
 	 * {@link EncodingMode#URI_COMPONENT URI_COMPONENT}. As of 5.0.8, prefer
 	 * using {@link EncodingMode#TEMPLATE_AND_VALUES TEMPLATE_AND_VALUES}.
-	 *
 	 * <p><strong>Note:</strong> in 5.0 the switch from
 	 * {@link org.springframework.web.util.DefaultUriTemplateHandler
 	 * DefaultUriTemplateHandler} (deprecated in 4.3), as the default to use, to
 	 * {@link DefaultUriBuilderFactory} brings in a different default for the
 	 * {@code parsePath} property (switching from false to true).
-	 *
 	 * @param handler the URI template handler to use
 	 */
 	public void setUriTemplateHandler(UriTemplateHandler handler) {
@@ -649,7 +655,7 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 	}
 
 
-	// general execution
+	// General execution
 
 	/**
 	 * {@inheritDoc}
@@ -817,7 +823,7 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 	}
 
 	/**
-	 * Returns a response extractor for {@link HttpHeaders}.
+	 * Return a response extractor for {@link HttpHeaders}.
 	 */
 	protected ResponseExtractor<HttpHeaders> headersExtractor() {
 		return this.headersExtractor;
@@ -951,9 +957,9 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 						return;
 					}
 				}
-				String message = "No HttpMessageConverter for [" + requestBodyClass.getName() + "]";
+				String message = "No HttpMessageConverter for " + requestBodyClass.getName();
 				if (requestContentType != null) {
-					message += " and content type [" + requestContentType + "]";
+					message += " and content type \"" + requestContentType + "\"";
 				}
 				throw new RestClientException(message);
 			}
@@ -965,8 +971,7 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 					logger.debug("Writing [" + body + "] as \"" + mediaType + "\"");
 				}
 				else {
-					String classname = converter.getClass().getName();
-					logger.debug("Writing [" + body + "] with " + classname);
+					logger.debug("Writing [" + body + "] with " + converter.getClass().getName());
 				}
 			}
 		}
