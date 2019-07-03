@@ -16,6 +16,7 @@ plugins {
 	id "org.asciidoctor.convert" version "1.5.8"
 }
 
+//TODO 项目的Gradle的拓展参数在其他地方使用${获取}？？？
 ext {
 	linkHomepage = "https://spring.io/projects/spring-framework"
 	linkCi = "https://build.spring.io/browse/SPR"

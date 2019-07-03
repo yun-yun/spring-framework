@@ -1,5 +1,7 @@
+//描述
 description = "Spring Core"
 
+//依赖管理
 dependencyManagement {
 	imports {
 		mavenBom "io.projectreactor:reactor-bom:${reactorVersion}"
@@ -7,6 +9,8 @@ dependencyManagement {
 	}
 }
 
+//spring-core包括asm和重新打包cglib，内联到spring-core jar中。
+//cglib本身依赖于asm，因此JarJar任务将其进一步转换为依赖于org.springframe.asm;这避免了包含两个不同的asm副本。
 // spring-core includes asm and repackages cglib, inlining both into the spring-core jar.
 // cglib itself depends on asm and is therefore further transformed by the JarJar task to
 // depend on org.springframework.asm; this avoids including two different copies of asm.
