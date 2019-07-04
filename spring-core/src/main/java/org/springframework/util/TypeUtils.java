@@ -24,6 +24,9 @@ import java.lang.reflect.WildcardType;
 import org.springframework.lang.Nullable;
 
 /**
+ * 类型工具类
+ * 用于处理Java 5泛型类型参数的实用程序。
+ * 主要用于框架内部使用。
  * Utility to work with Java 5 generic type parameters.
  * Mainly for internal use within the framework.
  *
@@ -35,10 +38,11 @@ import org.springframework.lang.Nullable;
 public abstract class TypeUtils {
 
 	/**
+	 * 检查是否可以按照Java泛型规则将右侧类型分配给左侧类型。
 	 * Check if the right-hand side type may be assigned to the left-hand side
 	 * type following the Java generics rules.
 	 * @param lhsType the target type
-	 * @param rhsType the value type that should be assigned to the target type
+	 * @param rhsType the value type that should be assigned to the target type 应该分配给目标类型的值类型
 	 * @return true if rhs is assignable to lhs
 	 */
 	public static boolean isAssignable(Type lhsType, Type rhsType) {

@@ -19,9 +19,12 @@ package org.springframework.util;
 import org.springframework.lang.Nullable;
 
 /**
+ * 系统属性工具类
+ * 用于解析文本中的占位符的Helper类。通常应用于文件路径。
  * Helper class for resolving placeholders in texts. Usually applied to file paths.
- *
+ * 一个文本也许包含${...}占位符,则将其作为系统属性解析:
  * <p>A text may contain {@code ${...}} placeholders, to be resolved as system properties:
+ * 例如${user.dir} 默认值可以支持使用":"分隔符，例如${user.age:18}
  * e.g. {@code ${user.dir}}. Default values can be supplied using the ":" separator
  * between key and value.
  *
@@ -44,10 +47,11 @@ public abstract class SystemPropertyUtils {
 	/** Value separator for system property placeholders: ":". */
 	public static final String VALUE_SEPARATOR = ":";
 
-
+	//严格的属性占位符助手
 	private static final PropertyPlaceholderHelper strictHelper =
 			new PropertyPlaceholderHelper(PLACEHOLDER_PREFIX, PLACEHOLDER_SUFFIX, VALUE_SEPARATOR, false);
 
+	//不严格的属性占位符助手(忽略不能解决的占位符)
 	private static final PropertyPlaceholderHelper nonStrictHelper =
 			new PropertyPlaceholderHelper(PLACEHOLDER_PREFIX, PLACEHOLDER_SUFFIX, VALUE_SEPARATOR, true);
 

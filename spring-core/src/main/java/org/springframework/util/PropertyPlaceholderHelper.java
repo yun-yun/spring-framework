@@ -28,6 +28,8 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.lang.Nullable;
 
 /**
+ * 属性占位符助手
+ * 用于处理具有占位符值的字符串的实用程序类。占位符采用这种形式${name},使用这个类可以代替用户提供的值
  * Utility class for working with Strings that have placeholder values in them. A placeholder takes the form
  * {@code ${name}}. Using {@code PropertyPlaceholderHelper} these placeholders can be substituted for
  * user-supplied values. <p> Values for substitution can be supplied using a {@link Properties} instance or
@@ -49,13 +51,14 @@ public class PropertyPlaceholderHelper {
 		wellKnownSimplePrefixes.put(")", "(");
 	}
 
-
+	//占位符前缀
 	private final String placeholderPrefix;
-
+	//占位符后缀
 	private final String placeholderSuffix;
-
+	//简单占位符
 	private final String simplePrefix;
 
+	//数值分隔符
 	@Nullable
 	private final String valueSeparator;
 
@@ -88,6 +91,7 @@ public class PropertyPlaceholderHelper {
 		Assert.notNull(placeholderSuffix, "'placeholderSuffix' must not be null");
 		this.placeholderPrefix = placeholderPrefix;
 		this.placeholderSuffix = placeholderSuffix;
+		//设置简单前缀，从已知的map中判断并获取
 		String simplePrefixForSuffix = wellKnownSimplePrefixes.get(this.placeholderSuffix);
 		if (simplePrefixForSuffix != null && this.placeholderPrefix.endsWith(simplePrefixForSuffix)) {
 			this.simplePrefix = simplePrefixForSuffix;
@@ -101,6 +105,7 @@ public class PropertyPlaceholderHelper {
 
 
 	/**
+	 * 用提供的属性 替换所有的占位符
 	 * Replaces all placeholders of format {@code ${name}} with the corresponding
 	 * property from the supplied {@link Properties}.
 	 * @param value the value containing the placeholders to be replaced
@@ -109,6 +114,7 @@ public class PropertyPlaceholderHelper {
 	 */
 	public String replacePlaceholders(String value, final Properties properties) {
 		Assert.notNull(properties, "'properties' must not be null");
+		//使用函数式接口来方便拓展获取属性的方式
 		return replacePlaceholders(value, properties::getProperty);
 	}
 
@@ -124,16 +130,21 @@ public class PropertyPlaceholderHelper {
 		return parseStringValue(value, placeholderResolver, null);
 	}
 
+	/*
+	替换属性的具体方法
+	 */
 	protected String parseStringValue(
 			String value, PlaceholderResolver placeholderResolver, @Nullable Set<String> visitedPlaceholders) {
-
+		//判断是否存在占位符，不存在则直接返回
 		int startIndex = value.indexOf(this.placeholderPrefix);
 		if (startIndex == -1) {
 			return value;
 		}
 
+
 		StringBuilder result = new StringBuilder(value);
 		while (startIndex != -1) {
+			//寻找占位符的结束index
 			int endIndex = findPlaceholderEndIndex(result, startIndex);
 			if (endIndex != -1) {
 				String placeholder = result.substring(startIndex + this.placeholderPrefix.length(), endIndex);
@@ -141,6 +152,7 @@ public class PropertyPlaceholderHelper {
 				if (visitedPlaceholders == null) {
 					visitedPlaceholders = new HashSet<>(4);
 				}
+				//判断该占位符是否完全
 				if (!visitedPlaceholders.add(originalPlaceholder)) {
 					throw new IllegalArgumentException(
 							"Circular placeholder reference '" + originalPlaceholder + "' in property definitions");
@@ -186,25 +198,32 @@ public class PropertyPlaceholderHelper {
 		}
 		return result.toString();
 	}
-
+	//寻找占位符的endindex
 	private int findPlaceholderEndIndex(CharSequence buf, int startIndex) {
 		int index = startIndex + this.placeholderPrefix.length();
 		int withinNestedPlaceholder = 0;
 		while (index < buf.length()) {
+			//判断后缀占位符 在 index处是否匹配
 			if (StringUtils.substringMatch(buf, index, this.placeholderSuffix)) {
+				//匹配 - 判断是否有内嵌套的占位符
 				if (withinNestedPlaceholder > 0) {
 					withinNestedPlaceholder--;
+					//跳过此位置
 					index = index + this.placeholderSuffix.length();
 				}
 				else {
 					return index;
 				}
 			}
+			//判断前缀占位符 在 index处是否匹配
 			else if (StringUtils.substringMatch(buf, index, this.simplePrefix)) {
+				//当前内嵌占位符标识+1
 				withinNestedPlaceholder++;
+				//跳过此位置
 				index = index + this.simplePrefix.length();
 			}
 			else {
+				//位置+1
 				index++;
 			}
 		}

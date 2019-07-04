@@ -14,9 +14,11 @@ dependencyManagement {
 // spring-core includes asm and repackages cglib, inlining both into the spring-core jar.
 // cglib itself depends on asm and is therefore further transformed by the JarJar task to
 // depend on org.springframework.asm; this avoids including two different copies of asm.
+//文件打包后的版本
 def cglibVersion = "3.2.11"
 def objenesisVersion = "3.0.1"
 
+//TODO 配置？
 configurations {
 	jarjar
 	cglib
