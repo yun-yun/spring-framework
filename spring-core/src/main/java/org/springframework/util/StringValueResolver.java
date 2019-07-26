@@ -28,6 +28,7 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.beans.factory.config.BeanDefinitionVisitor#BeanDefinitionVisitor(StringValueResolver)
  * @see org.springframework.beans.factory.config.PropertyPlaceholderConfigurer
  */
+//此接口是函数式接口，用于传递类的方法
 @FunctionalInterface
 public interface StringValueResolver {
 

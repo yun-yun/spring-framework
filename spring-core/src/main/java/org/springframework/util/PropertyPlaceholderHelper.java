@@ -159,6 +159,7 @@ public class PropertyPlaceholderHelper {
 				}
 				// Recursive invocation, parsing placeholders contained in the placeholder key.
 				placeholder = parseStringValue(placeholder, placeholderResolver, visitedPlaceholders);
+				// 现在获取全解析键的值…
 				// Now obtain the value for the fully resolved key...
 				String propVal = placeholderResolver.resolvePlaceholder(placeholder);
 				if (propVal == null && this.valueSeparator != null) {
@@ -173,6 +174,7 @@ public class PropertyPlaceholderHelper {
 					}
 				}
 				if (propVal != null) {
+					// 递归调用，解析先前解析的占位符值中包含的占位符。
 					// Recursive invocation, parsing placeholders contained in the
 					// previously resolved placeholder value.
 					propVal = parseStringValue(propVal, placeholderResolver, visitedPlaceholders);
@@ -184,6 +186,7 @@ public class PropertyPlaceholderHelper {
 				}
 				else if (this.ignoreUnresolvablePlaceholders) {
 					// Proceed with unprocessed value.
+					// 继续处理未处理的值。
 					startIndex = result.indexOf(this.placeholderPrefix, endIndex + this.placeholderSuffix.length());
 				}
 				else {

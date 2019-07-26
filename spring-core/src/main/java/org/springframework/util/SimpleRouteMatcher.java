@@ -21,8 +21,12 @@ import java.util.Map;
 import org.springframework.lang.Nullable;
 
 /**
- * {@code RouteMatcher} that delegates to a {@link PathMatcher}.
  *
+ * {@code RouteMatcher} that delegates to a {@link PathMatcher}.
+ *	注意:</strong>这个实现效率不高，因为
+ * {@code PathMatcher}将路径和模式视为字符串。更优化的
+ * 性能使用{@code spring-web}中的{@code PathPatternRouteMatcher}
+ * 它支持使用已解析的路由和模式。
  * <p><strong>Note:</strong> This implementation is not efficient since
  * {@code PathMatcher} treats paths and patterns as Strings. For more optimized
  * performance use the {@code PathPatternRouteMatcher} from {@code spring-web}

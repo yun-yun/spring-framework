@@ -25,9 +25,11 @@ import java.util.TreeSet;
 import javax.net.ServerSocketFactory;
 
 /**
+ * 处理网络套接字的简单实用方法例如, 用于查找{@code localhost}上的可用端口。
  * Simple utility methods for working with network sockets &mdash; for example,
  * for finding available ports on {@code localhost}.
- *
+ *	在这个类中，TCP端口引用{@link ServerSocket}的端口;
+ *	然而，UDP端口引用{@link DatagramSocket}的端口。
  * <p>Within this class, a TCP port refers to a port for a {@link ServerSocket};
  * whereas, a UDP port refers to a port for a {@link DatagramSocket}.
  *

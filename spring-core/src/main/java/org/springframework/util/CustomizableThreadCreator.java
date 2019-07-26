@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.lang.Nullable;
 
 /**
+ * 可定制线程实例的帮助类
  * Simple customizable helper class for creating new {@link Thread} instances.
  * Provides various bean properties: thread name prefix, thread priority, etc.
  *

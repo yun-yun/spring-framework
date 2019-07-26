@@ -46,4 +46,9 @@ public class PathPatternRouteMatcherTest {
 		assertThat(routeMatcher.match("projects.{name}", route)).isTrue();
 	}
 
+	@Test
+	public void matchRoute2() {
+		RouteMatcher.Route route = routeMatcher.parseRoute("/projects/spring-framework");
+		assertThat(routeMatcher.match("/projects/**", route)).isTrue();
+	}
 }

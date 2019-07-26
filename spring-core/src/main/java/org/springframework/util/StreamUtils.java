@@ -31,6 +31,10 @@ import java.nio.charset.Charset;
 import org.springframework.lang.Nullable;
 
 /**
+ * 处理流的简单实用方法。这个类的复制方法是
+ * 与{@link FileCopyUtils}中定义的类似，只是所有受影响的流都是
+ * 完成后保持打开状态。所有复制方法都使用4096字节的块大小。
+ * <p>主要用于框架内使用，也适用于应用程序代码。
  * Simple utility methods for dealing with streams. The copy methods of this class are
  * similar to those defined in {@link FileCopyUtils} except that all affected streams are
  * left open when done. All copy methods use a block size of 4096 bytes.
@@ -107,6 +111,7 @@ public abstract class StreamUtils {
 	}
 
 	/**
+	 * 将给定的字符串内容输出到outputStream
 	 * Copy the contents of the given String to the given output OutputStream.
 	 * Leaves the stream open when done.
 	 * @param in the String to copy from
@@ -189,6 +194,8 @@ public abstract class StreamUtils {
 	}
 
 	/**
+	 * 沥干给定InputStream的剩余内容。
+	 * 完成后，让InputStream保持打开状态。
 	 * Drain the remaining content of the given InputStream.
 	 * Leaves the InputStream open when done.
 	 * @param in the InputStream to drain
@@ -217,6 +224,7 @@ public abstract class StreamUtils {
 	}
 
 	/**
+	 * 将InputStream封装为不可关闭的流
 	 * Return a variant of the given {@link InputStream} where calling
 	 * {@link InputStream#close() close()} has no effect.
 	 * @param in the InputStream to decorate
@@ -228,6 +236,7 @@ public abstract class StreamUtils {
 	}
 
 	/**
+	 * 封装为不可关闭的输出流
 	 * Return a variant of the given {@link OutputStream} where calling
 	 * {@link OutputStream#close() close()} has no effect.
 	 * @param out the OutputStream to decorate
