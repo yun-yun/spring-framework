@@ -118,6 +118,9 @@ public class Enhancer extends AbstractClassGenerator {
 	private static final String CONSTRUCTED_FIELD = "CGLIB$CONSTRUCTED";
 
 	/**
+	 * generatedClasses需要保持缓存的key（这个key应该在代理类存活的时候不被删除），并且其中一个缓存key是CallbackFilter
+	 * 这就是为什么生成的类包含静态字段，该字段保持对{@link #filter}的强引用。
+	 * 这个舞蹈实现了两个目标:确保生成的类是可重用的，并且可以通过generatedClasses缓存使用，如果用户不需要卸载类加载器和相关的{@link CallbackFilter}
 	 * {@link org.springframework.cglib.core.AbstractClassGenerator.ClassLoaderData#generatedClasses} requires to keep cache key
 	 * in a good shape (the keys should be up and running if the proxy class is alive), and one of the cache keys is
 	 * {@link CallbackFilter}. That is why the generated class contains static field that keeps strong reference to
@@ -512,6 +515,10 @@ public class Enhancer extends AbstractClassGenerator {
 		}
 
 		/**
+		 * 用给定的参数及类型和给定的回调创建实例
+		 * 理想情况下，对于每个代理类，应该只使用一组参数类型,否则要花时间在寻找构造函数上
+		 * 从技术上讲，它是对{@link Enhancer#createUsingReflection(Class)}的重新实现，
+		 * 使用了“cache {@link #setThreadCallbacks}和{@link #primaryConstructor}”
 		 * Creates proxy instance for given argument types, and assigns the callbacks.
 		 * Ideally, for each proxy class, just one set of argument types should be used,
 		 * otherwise it would have to spend time on constructor lookup.
@@ -644,6 +651,7 @@ public class Enhancer extends AbstractClassGenerator {
 			}
 			methods.addAll(interfaceMethods);
 		}
+		//过滤掉这四个
 		CollectionUtils.filter(methods, new RejectModifierPredicate(Constants.ACC_STATIC));
 		CollectionUtils.filter(methods, new VisibilityPredicate(superclass, true));
 		CollectionUtils.filter(methods, new DuplicatesPredicate());
